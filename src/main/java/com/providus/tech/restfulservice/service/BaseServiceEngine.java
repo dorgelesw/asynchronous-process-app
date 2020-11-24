@@ -8,13 +8,11 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 
-import java.util.Collection;
-import java.util.HashSet;
+import static com.providus.tech.restfulservice.controller.BaseServiceController.computeNaturalNumberInProgress;
+import static com.providus.tech.restfulservice.controller.BaseServiceController.responseMessage;
 
 @Service
 public class BaseServiceEngine {
-
-    public static Collection<Integer> computeNaturalNumberInProgress = new HashSet<>();
 
     @Autowired
     private TaskExecutor taskExecutor;
@@ -54,9 +52,5 @@ public class BaseServiceEngine {
 
         // return default message without wait for the end of the computation
         return new ComputeResponse(naturalNumber.intValue());
-    }
-
-    private String responseMessage(int computeNumber) {
-        return String.format("The generated number is %d", computeNumber);
     }
 }

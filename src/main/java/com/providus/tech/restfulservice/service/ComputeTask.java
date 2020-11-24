@@ -3,15 +3,13 @@ package com.providus.tech.restfulservice.service;
 import com.providus.tech.restfulservice.repository.DataEngine;
 import com.providus.tech.restfulservice.repository.DataEngineRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
 
-import static com.providus.tech.restfulservice.service.BaseServiceEngine.computeNaturalNumberInProgress;
+import static com.providus.tech.restfulservice.controller.BaseServiceController.computeNaturalNumberInProgress;
 
 @Component
-@Scope("prototype")
 public class ComputeTask implements Runnable {
 
     private static final InheritableThreadLocal<Integer> naturalNumber = new InheritableThreadLocal<>();
@@ -39,9 +37,9 @@ public class ComputeTask implements Runnable {
         // computation not fail. Save computation result
         if (computeNumber != 99) {
             dataEngineRepository.save(new DataEngine(ComputeTask.naturalNumber.get().intValue(), computeNumber));
-            BaseServiceEngine.computeNaturalNumberInProgress.remove(ComputeTask.naturalNumber.get().intValue());
-            ComputeTask.naturalNumber.remove();
         }
+        computeNaturalNumberInProgress.remove(ComputeTask.naturalNumber.get().intValue());
+        ComputeTask.naturalNumber.remove();
     }
 
     public static void setNaturalNumber(Integer naturalNumber) {

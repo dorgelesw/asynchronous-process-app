@@ -2,8 +2,7 @@
 
 ## 1. Asynchronous process
 Async process appear sometime when we have a long-running or distributed task. 
-The general practice that’s followed in java world to start an async process is to create 
-a separate thread or implement Runnable method.
+The general practice that’s followed in java world to start an async process it's implementation of  `Runnable` or `Callable` method.
 
 A good practice by using `Spring` it's to create thread inside the spring context 
 to be able to autowire inside the class in case process execution need to communicate with other components.
@@ -33,10 +32,14 @@ which extend `Executor` from java and can therefore be used as the assignment ta
 In practice, define a task that can be executed by multiple threads which will be an interface or an implementation of [Runnable or Callable](https://www.baeldung.com/java-runnable-callable). 
 Then, use `TaskExecutor` to run the task.
 
-Note that implementation of task should be:
+Note that implementation of task could be:
 ```
 @Component
 @Scope("prototype")
+```
+If it's stateful otherwise,
+```
+@Component
 ```
 
 * [@Async](https://www.baeldung.com/spring-async)
@@ -71,32 +74,37 @@ Additionally, the computation fails on the 1% of the cases. If the generated num
 computation will be considered failed, and a subsequent request for the same input will result in a
 new computation started.
 
-## 4. Business requirements
+### 3.1. Business requirements
 * The application should be designed as Restful web service.
-* The requests to application are asynchronous. 
+* The service are asynchronous. 
 Means api will not wait for the end of the computation, but it will immediately return with a feedback message.  
 * The service of application should be stateless.
 * The computation is running in concurrency. The application should not start the same computation for the same input.
 
-## 5. Technical requirements
+### 3.2. Technical requirements
 * `Java 1.8` or later.
 * `Spring Boot 2.x` to start and run application.
 * We will use `maven 3.x` to build application.
 
-## 6. Solution Concept
+### 3.3. Solution Concept
 To respond our business requirements, we will use:
 * `Spring Web MVC Framework` to implement the Restful API.
 * Since we don't need to persist data when the application shuts down, we will use In-memory database because memory access is faster than disk access.
 So we will run H2 database as embedded database in Spring Boot.
-* We will use `ThreadLocal` java tool to manage concurrent computation.
+* We will implement the two approaches of asynchronous service as code. We will use `ThreadLocal` java tool to inject user context in our task by using `TaskExecutor` approach.
 * We will use `Spring Data JPA` for mapping entity in the database.
 * API Endpoint will take input natural number as a parameter and return response in `JSON` format. 
 
-### Request Endpoint
+### 3.4. Request Endpoint
+* Using `TaskExecutor` method
 ```
 http://www.providus.tech:8080/base-service?naturalNumber=10
 ```
-### Response format
+* Using `@Async` method
+```
+http://www.providus.tech:8080/async-service?naturalNumber=10
+```
+### 3.5. Response Format
 * Computation in progress
 ```
 {
@@ -119,11 +127,11 @@ http://www.providus.tech:8080/base-service?naturalNumber=10
     "error": "Bad Request"
 }
 ```
-## 7. Technical architecture
+### 3.6. Technical Architecture
 Our application has 2 principal components.
-### Business logic
+#### Business Logic
 * `Controller` : handle request
 * `Service` : manage computation
 * `Repository`: manage DAO
-### Data Storage
+#### Data Storage
 In-memory database to persist.
