@@ -8,17 +8,29 @@ A good practice by using `Spring` it's to create thread inside the spring contex
 to be able to autowire inside the class in case process execution need to communicate with other components.
 
 We can have two types of asynchronous process:
-* Async request
+### 1.1. Async request
 
-It's about http client request which start with Tomcat and end Tomcat.
+It's about http client request which start with Tomcat and end Tomcat (In case we use servlet container Tomcat).
 
 Normally, Tomcat get the client request, holds the connection and returns a response to the client through the controller.
 
-We talk about async request when we want to release Tomcat thread but keep the client connection (don't return response) and run heavy processing on a different thread.
+We talk about async request when we want to release Tomcat thread associated with a request but keep the client connection (don't return response) and run heavy processing to a new thread.
 
-And then, when your heavy processing complete, update Tomcat with its response and return it to the client (by Tomcat).
+When the heavy processing completes in the asynchronous execution context, the thread generate a response and return it to the client (by Tomcat) or dispatch the request to another servlet.
 
-* Async code 
+Let me define servlet container element as:
+1. [Contract between servlet class and servlet container](https://docs.oracle.com/javaee/7/api/javax/servlet/package-summary.html)
+2. Thread Pool Request. These thread pools are necessary to control the amount of threads that are being executed simultaneously and avoid `OutOfMemoryError`. 
+3. Async execution context introduced in [Servlet 3.0](https://docs.oracle.com/javaee/7/api/javax/servlet/AsyncContext.html)
+
+[Thus we can consider this flow for async request:](https://docs.oracle.com/javaee/7/tutorial/servlets012.htm)
+
+1. Tomcat (servlet container) get client request.
+2. Take a servlet thread request available in the pool.
+3. Servlet container release thread request but keep the client connection and run heavy processing to an asynchronous execution context with a new thread.
+4. Thread generate a response once the heavy process ended or dispatch the request to another servlet.
+
+### 1.2. Async code 
 
 When we run a method into a service in a separate thread.
 
@@ -55,6 +67,30 @@ So, spring will take care of creating a thread and starting it. All the good stu
 By default, Spring uses a `SimpleAsyncTaskExecutor` to actually run these methods asynchronously. 
 The defaults can be overridden at two levels – at the application level or at the individual method level.
 
+Before to use `@Async`, first at all you need to enable asynchronous processing either with Java configuration
+```
+@Configuration
+@EnableAsync
+```
+or XML configuration by using the task namespace
+``` 
+<task:executor id="myexecutor" pool-size="5"  />
+<task:annotation-driven executor="myexecutor"/>
+```
+### 2.2. Async request
+Spring web MVC uses [asynchronous processing](https://docs.spring.io/spring-framework/docs/5.2.7.RELEASE/spring-framework-reference/web.html#mvc-ann-async-processing) support provided by `Servlet 3.1+` which allows processing an HTTP request in another thread than the request receiver thread.
+Controller can use `DeferredResult` and `Callable` for a single asynchronous return value or `HTTP Streaming` return type for multiple asynchronous values or return `reactive types` for response handling waiting by reactive clients.
+
+#### 2.2.1. DeferredResult and Callable
+The both concepts make a Java web application scalability (Servlet API Thread Pool) 
+by resolving the specific problem of blocking servlet threads due to long term requests, which is releasing the container thread and processing the long-running task asynchronously in another thread.
+
+The difference from both is that it's your responsibility to manage the thread executing the task and set the result when you use `DeferredResult`.
+
+The kind of problems which find their usage of this functionality can be:
+* A long-running task in general, since while another thread processes this request, the container thread request is free and can continue serving other requests.
+* Execute intensive I/O operations.
+* Do network tasks, such as handling file uploads or processing a huge volume of data coming from clients.
 
 ## 3. Sample case study: Base Compute application
 Implement a restful API in Java and Spring Boot that takes in input a positive natural number and
