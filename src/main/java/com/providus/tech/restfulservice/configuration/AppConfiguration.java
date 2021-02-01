@@ -5,10 +5,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 @EnableAsync
-public class AppConfiguration {
+public class AppConfiguration implements WebMvcConfigurer {
 
     @Bean
     public TaskExecutor threadPoolTaskExecutor() {
@@ -18,5 +20,9 @@ public class AppConfiguration {
         executor.setThreadNamePrefix("compute_task_executor_thread");
         executor.initialize();
         return executor;
+    }
+    
+    public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
+        configurer.setTaskExecutor((ThreadPoolTaskExecutor)threadPoolTaskExecutor());
     }
 }

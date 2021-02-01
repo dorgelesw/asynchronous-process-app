@@ -79,7 +79,10 @@ or XML configuration by using the task namespace
 ```
 ### 2.2. Async request
 Spring web MVC uses [asynchronous processing](https://docs.spring.io/spring-framework/docs/5.2.7.RELEASE/spring-framework-reference/web.html#mvc-ann-async-processing) support provided by `Servlet 3.1+` which allows processing an HTTP request in another thread than the request receiver thread.
-Controller can use `DeferredResult` and `Callable` for a single asynchronous return value or `HTTP Streaming` return type for multiple asynchronous values or return `reactive types` for response handling waiting by reactive clients.
+Controller can use:
+* `DeferredResult` and `Callable` for a single asynchronous return value or
+* `HTTP Streaming` return type for multiple asynchronous values or 
+* `Reactive types` for response handling waiting by reactive clients.
 
 #### 2.2.1. DeferredResult and Callable
 The both concepts make a Java web application scalability (Servlet API Thread Pool) 
@@ -92,6 +95,29 @@ The kind of problems which find their usage of this functionality can be:
 * Execute intensive I/O operations.
 * Do network tasks, such as handling file uploads or processing a huge volume of data coming from clients.
 
+##### 2.2.1.1. DeferredResult
+Remember that it's your responsibility to manage thread executing the task and result when you use `DeferredResult`.
+I recommend creating an asynchronous task with java tool `CompletableFuture` which is a custom way to running, monitoring, debugging, and tracking asynchronous tasks.
+The default executor thread pool used is `ForkJoinPool.commonPool()`.
+```
+ DeferredResult<String> deferredResult = new DeferredResult<>();
+        CompletableFuture.supplyAsync(taskService::execute)
+                .whenCompleteAsync((result, throwable) -> deferredResult.setResult(result));
+```
+###### DeferredResult Callbacks
+Keep in mind that by using `DeferredResult` we can use callback function to set result. We have 3 types of callbacks:
+* onCompletion(): to define a block of runnable code that's executed when an async request completes.
+* onTimeout(): to register custom code to invoke once timeout occurs. In order to limit request processing time, we can pass a timeout value during the DeferredResult object creation.
+* onError(): when computation fails due to some error or exception.
+
+##### 2.2.1.2. Callable
+A functional interface task Callable<V> returns a result and may throw an exception. Implementors define a single method with no arguments called `call`.
+An `Executor` is required to handle Callable return values. If a `TaskExecutor` is not configured, `SimpleAsyncTaskExecutor` will be used as default.
+You can use `WebAsyncTask` to set the default timeout value on a `Callable`.
+
+#### 2.2.2. HTTP Streaming
+It's used to produce multiple asynchronous values and have those written to the response generally as body in a `ResponseEntity`.
+* Objects
 ## 3. Sample case study: Base Compute application
 Implement a restful API in Java and Spring Boot that takes in input a positive natural number and
 starts a long-running computation, storing in memory the outcome of the computation.
@@ -127,7 +153,8 @@ To respond our business requirements, we will use:
 * `Spring Web MVC Framework` to implement the Restful API.
 * Since we don't need to persist data when the application shuts down, we will use In-memory database because memory access is faster than disk access.
 So we will run H2 database as embedded database in Spring Boot.
-* We will implement the two approaches of asynchronous service as code. We will use `ThreadLocal` java tool to inject user context in our task by using `TaskExecutor` approach.
+* We will implement two approaches of asynchronous service as code. 
+We will use first use `TaskExecutor` approach and `ThreadLocal` java tool to inject user context in our task. Then secondly, the `@Async` annotation support in Spring.
 * We will use `Spring Data JPA` for mapping entity in the database.
 * API Endpoint will take input natural number as a parameter and return response in `JSON` format. 
 
