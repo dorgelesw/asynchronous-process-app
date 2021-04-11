@@ -21,7 +21,7 @@ public class AppConfiguration implements WebMvcConfigurer {
         executor.initialize();
         return executor;
     }
-    
+
     public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
         configurer.setTaskExecutor((ThreadPoolTaskExecutor)threadPoolTaskExecutor());
     }

@@ -16,7 +16,7 @@ import java.util.concurrent.Callable;
 public class AsyncCallableController {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    private final Integer TIMEOUT = 3000;
+    private final long TIMEOUT = 3000L;
     private final TaskService taskService;
 
     @Autowired
@@ -35,10 +35,21 @@ public class AsyncCallableController {
 
     @GetMapping("/timeout-handling")
     public WebAsyncTask<String> callableTimeout() {
+        logger.info("Request received");
         Callable<String> callable = () -> {
-            Thread.sleep(10000);
-            return "Callable result";
+            boolean call= true;
+            while (call) {
+
+            }
+            return "Callable result OK";
         };
-        return new WebAsyncTask<String>(TIMEOUT, callable);
+        logger.info("Servlet thread released");
+        WebAsyncTask<String> webAsyncTask = new WebAsyncTask(TIMEOUT, callable);
+        webAsyncTask.onTimeout(() -> {
+            logger.info("onTimeout: callback function webAsyncTask.onTimeout()");
+            return "Request timeout occurred.";
+        });
+
+        return webAsyncTask;
     }
 }

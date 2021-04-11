@@ -29,8 +29,12 @@ public class AsyncDeferredController {
         DeferredResult<String> deferredResult = new DeferredResult<>();
         CompletableFuture.supplyAsync(taskService::execute)
                 .whenCompleteAsync((result, throwable) -> deferredResult.setResult(result));
-        logger.info("onCompletion: Servlet thread released");
         deferredResult.onCompletion(() -> logger.info("onCompletion: Processing complete"));
+        deferredResult.onTimeout(() -> {
+            logger.info("onTimeout: callback function deferredResult.onTimeout()");
+            deferredResult.setErrorResult("Request timeout occurred.");
+        });
+        logger.info("onCompletion: Servlet thread released");
         return deferredResult;
     }
 
@@ -40,9 +44,12 @@ public class AsyncDeferredController {
         DeferredResult<String> deferredResult = new DeferredResult<>(6000l);
         CompletableFuture.supplyAsync(taskService::execute)
                 .whenCompleteAsync((result, throwable) -> deferredResult.setResult(result));
-        logger.info("onTimeout: Servlet thread released");
         deferredResult.onCompletion(() -> logger.info("onTimeout: Processing complete"));
-        deferredResult.onTimeout(() -> deferredResult.setErrorResult("Request timeout occurred."));
+        deferredResult.onTimeout(() -> {
+            logger.info("onTimeout: callback function deferredResult.onTimeout()");
+            deferredResult.setErrorResult("Request timeout occurred.");
+        });
+        logger.info("onTimeout: Servlet thread released");
         return deferredResult;
     }
 
@@ -50,19 +57,16 @@ public class AsyncDeferredController {
     public DeferredResult<String> executeTaskOnError() {
         logger.info("onError: Request received");
         DeferredResult<String> deferredResult = new DeferredResult<>();
-        CompletableFuture.supplyAsync(() -> {
-            try {
-                Thread.sleep(10000);
-                throw new RuntimeException();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        CompletableFuture completableFuture = CompletableFuture.supplyAsync(() -> {
+            throw new RuntimeException();
+        });
+        completableFuture.whenCompleteAsync((result, throwable) -> {
+            if (result == null) {
+                deferredResult.setErrorResult("Request runtime exception.");
             }
-            return "Task finished";
-            })
-                .whenCompleteAsync((result, throwable) -> deferredResult.setResult(result));
-        logger.info("onError: Servlet thread released");
+        });
         deferredResult.onCompletion(() -> logger.info("onError: Processing complete"));
-        deferredResult.onError(throwable -> deferredResult.setErrorResult("An error occurred."));
+        logger.info("onError: Servlet thread released");
         return deferredResult;
     }
 }

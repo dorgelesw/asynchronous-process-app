@@ -84,16 +84,16 @@ Controller can use:
 * `HTTP Streaming` return type for multiple asynchronous values or 
 * `Reactive types` for response handling waiting by reactive clients.
 
-#### 2.2.1. DeferredResult and Callable
-The both concepts make a Java web application scalability (Servlet API Thread Pool) 
-by resolving the specific problem of blocking servlet threads due to long term requests, which is releasing the container thread and processing the long-running task asynchronously in another thread.
-
-The difference from both is that it's your responsibility to manage the thread executing the task and set the result when you use `DeferredResult`.
-
 The kind of problems which find their usage of this functionality can be:
 * A long-running task in general, since while another thread processes this request, the container thread request is free and can continue serving other requests.
 * Execute intensive I/O operations.
 * Do network tasks, such as handling file uploads or processing a huge volume of data coming from clients.
+
+#### 2.2.1. [DeferredResult and Callable](https://docs.spring.io/spring-framework/docs/5.2.7.RELEASE/spring-framework-reference/web.html#mvc-ann-async-deferredresult)
+The both concepts make a Java web application scalability (Servlet API Thread Pool) 
+by resolving the specific problem of blocking servlet threads due to long term requests, which is releasing the container thread and processing the long-running task asynchronously in another thread.
+
+The difference from both is that it's your responsibility to manage the thread executing the task and set the result when you use `DeferredResult`.
 
 ##### 2.2.1.1. DeferredResult
 Remember that it's your responsibility to manage thread executing the task and result when you use `DeferredResult`.
@@ -115,9 +115,35 @@ A functional interface task Callable<V> returns a result and may throw an except
 An `Executor` is required to handle Callable return values. If a `TaskExecutor` is not configured, `SimpleAsyncTaskExecutor` will be used as default.
 You can use `WebAsyncTask` to set the default timeout value on a `Callable`.
 
-#### 2.2.2. HTTP Streaming
-It's used to produce multiple asynchronous values and have those written to the response generally as body in a `ResponseEntity`.
+#### 2.2.2. [HTTP Streaming](https://docs.spring.io/spring-framework/docs/5.2.7.RELEASE/spring-framework-reference/web.html#mvc-ann-async-http-streaming)
+It's used to produce multiple asynchronous return values and have those written to the response generally as body in a `ResponseEntity`. Depending on the usage, the return values can be in different types.
+We can use `CompletableFuture` to run our asynchronous tasks. But for our examples in this part, we will simple use asynchronous entity provided by the `ExecutorService`.
+
+Note also that since we are in Spring MVC, the connection with client is keep with a time out. When Async request timed out is coming, the client side stop to receive data.
+We can solve this issue by increase time out request or implement a mechanism of data pool request.
+
+Let us now describe the different return value types:
 * Objects
+
+We use `ResponseBodyEmitter` to send a stream of objects to the client, where each object sent is written to the response with an `HttpMessageConverter`.
+`HttpMessageConverter` is used to serialize the object in the corresponding http media type.
+
+* SSE [(Server-Sent Event)](https://www.baeldung.com/spring-server-sent-events)
+
+We use the return type `SseEmitter` to produce an SSE stream from a controller where events sent from the server are formatted according to the W3C SSE specification.
+
+The SSE specification is being adopted by most browsers to allow streaming events unidirectionally at any time. 
+
+The events are just a stream of UTF-8 encoded text data that follow the format defined by the specification. This format consists of a series of key-value elements (id, retry, data and event).
+The data payload format in any way; we can use a simple String or a more complex JSON or XML structure.
+
+* Raw Data
+
+This return type is useful to bypass message conversion and stream directly to the response `OutputStream`.
+
+We can write a primitive data types, files and graphs of Java objects to an `OutputStream`. Then, use the `StreamingResponseBody` return value type.
+
+
 ## 3. Sample case study: Base Compute application
 Implement a restful API in Java and Spring Boot that takes in input a positive natural number and
 starts a long-running computation, storing in memory the outcome of the computation.
