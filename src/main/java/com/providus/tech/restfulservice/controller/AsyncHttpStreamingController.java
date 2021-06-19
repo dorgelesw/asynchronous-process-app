@@ -6,7 +6,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.ResourceUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,13 +13,9 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
@@ -131,14 +126,14 @@ public class AsyncHttpStreamingController {
     @GetMapping("/raw-data-download-file")
     public ResponseEntity<StreamingResponseBody> streamingRawDataFile() throws FileNotFoundException {
         logger.info("http-streaming raw-data: Request received");
-        String fileName = "Covid-19-Nouvelle-Phase";
-        File file = ResourceUtils.getFile("classpath:static/" + fileName);
-        logger.info("http-streaming raw-data: Servlet thread released");
+        String fileName = "README.md";
+        File file = new File(fileName);
         StreamingResponseBody responseBody = outputStream -> {
             logger.info("http-streaming raw-data: start write file");
             Files.copy(file.toPath(), outputStream);
             logger.info("http-streaming raw-data: end write file");
         };
+        logger.info("http-streaming raw-data: Servlet thread released");
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=Downloaded_" + fileName)
                 .contentType(MediaType.APPLICATION_PDF)
