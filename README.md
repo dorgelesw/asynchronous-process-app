@@ -143,6 +143,28 @@ This return type is useful to bypass message conversion and stream directly to t
 
 We can write a primitive data types, files and graphs of Java objects to an `OutputStream`. Then, use the `StreamingResponseBody` return value type.
 
+#### 2.2.3. [Reactive Types](https://docs.spring.io/spring-framework/docs/5.2.7.RELEASE/spring-framework-reference/web.html#mvc-ann-async-reactive-types)
+Spring MVC and Spring WebFlux both support asynchronous and reactive return reactive types from the controller method.
+However, with Spring MVC programming model, individual writes to the response remain blocking and are performed on a separate thread.
+So using reactive return type in spring web mvc you do not see the real value of a reactive api.
+
+RxJava `Observable/Single` and Reactor `Flux/Mono` are used as Spring MVC handler method return types for reactive clients.
+
+* A single return value: RxJava `Single<T>` and Reactor `Mono<T>`
+
+Just used `Mono<T>` is not enough to do async request since spring mvc is blocking I/O programming model and need an extra thread for async processing.
+So, you can use  `DeferredResult<Mono<T>>` to implement async single return value mechanism.
+
+* A multi return value stream: RxJava `Observable<T>` and Reactor `Flux<T>`
+
+Dependent the content type of the endpoint used, we have two behaviours.
+
+When we use `application/json` adapted to `DeferredResult<Flux<T>` spring will communicate to the client to expect JSON body.
+The output at the client will be the whole set of T in one go. And once the response delivered the connection will be closed.
+
+However, by using `application/stream+json` adapted to `ResponseBodyEmitter<Flux<T>>` or `text/event-stream` adapted to `SseEmitter<Flux<T>>` 
+as the content type of the endpoint, spring starts to treat the resulting events of the Flux stream as individual JSON items.
+And, the connection from the server to client keep open up until the event sequence get completed.
 
 ## 3. Sample case study: Base Compute application
 Implement a restful API in Java and Spring Boot that takes in input a positive natural number and
